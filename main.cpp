@@ -1,11 +1,4 @@
-//RunHiddenConsole.cpp
-//copyright http://www.iavcast.com
-#include <windows.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <tchar.h>
-#include <io.h>
-#include <locale.h>
+#include "Core.h"
 
 HANDLE g_hStdin_Child_Rd = NULL;
 HANDLE g_hStdin_Parent_Wr = NULL;
@@ -326,7 +319,7 @@ BOOL Fork()
 }
 
 void Usage() {
-	printf("RunHiddenConsole Usage:\n"
+	_tprintf(_T("RunHiddenConsole Usage:\n"
 		"RunHiddenConsole.exe [/l] [/w] [/r] [/n name] [/k name] [/o output-file] [/p pidfile] commandline\n"
 	 "For example:\n"
 	 "RunHiddenConsole.exe /l /r e:\\WNMP\\PHP\\php-cgi.exe -b 127.0.0.1:9000 -c e:\\WNMP\\php\\php.ini\n"
@@ -337,26 +330,45 @@ void Usage() {
 	 "The /p is optional, saving the process id to a file\n"
 	 "The /r is optional, supervise the child process, if the child process exits, restart the child process\n"
 	 "The /n is optional, naming control signals\n"
-	 "The /k is optional, kill the daemon according to the specified control signal\n");
+	 "The /k is optional, kill the daemon according to the specified control signal\n"));
 }
 
-int _tmain(int nArgc, _TCHAR ** ppArgv)
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
-	TCHAR * pch;
-	TCHAR * pszExePath, szExePath[MAX_FILEPATH], szCurrentDirectory[MAX_FILEPATH];
-	TCHAR * pszCommandLine = NULL, *pszOutputFile = NULL, *pszPidFile = NULL, *pszSignalName = NULL;
+#ifdef _DEBUG
+	_CrtMemState oldState, newState, lastState;
+	_CrtMemCheckpoint(&oldState); //할당 전 상태
+#endif
+
+	bool attachedParentConsole = utils::AttachToConsole();
+	if (!attachedParentConsole) //부모 콘솔에 연결 실패할 경우
+	{
+		//utils::AttachToNewConsole(); //실행 창 표시할 경우 새 콘솔 할당
+		//do nothing
+	}
+
+	int nArgc;
+	LPWSTR* ppArgv = CommandLineToArgvW(GetCommandLineW(), &nArgc);
+
+	if (ppArgv == NULL) {
+		return -1;
+	}
+
+	WCHAR* pch;
+	WCHAR* pszExePath, szExePath[MAX_FILEPATH], szCurrentDirectory[MAX_FILEPATH];
+	WCHAR* pszCommandLine = NULL, * pszOutputFile = NULL, * pszPidFile = NULL, * pszSignalName = NULL;
 	BOOL bHasSpace;
 	BOOL bReturn;
 	BOOL bWaitExit = 0, bPrintLog = 0, bResume = 0, bFork = 0, bKill = 0;
-	int  iCmdLinePos = 1, i;
+	int iCmdLinePos = 1, i;
 	HANDLE hStdOut;
 	HANDLE hChildProcess = NULL;
 	DWORD dwChildPid = 0;
 	HANDLE hEventExit = NULL;
 
-	GetModuleFileName(NULL,g_szMyPath, ARRAYSIZE(g_szMyPath));
+	GetModuleFileName(NULL, g_szMyPath, ARRAYSIZE(g_szMyPath));
 
-	if (_tcsstr(g_szMyPath,TEXT("..\\"))) {
+	if (_tcsstr(g_szMyPath, TEXT("..\\"))) {
 		int nTextLength = (int)_tcslen(g_szMyPath);
 		LPTSTR pszDir = FixRelativePath(g_szMyPath, nTextLength);
 
@@ -367,16 +379,16 @@ int _tmain(int nArgc, _TCHAR ** ppArgv)
 		}
 	}
 
-	pch = _tcsrchr(g_szMyPath,'\\');
+	pch = _tcsrchr(g_szMyPath, '\\');
 	if (pch) {
-		pch ++;
+		pch++;
 		*pch = 0;
 	}
 	else {
 		//Never arrived here!
 		return -2;
 	}
-	
+
 	g_iMyPathLen = pch - g_szMyPath;
 
 	if (nArgc < 2) {
@@ -385,10 +397,10 @@ int _tmain(int nArgc, _TCHAR ** ppArgv)
 		return -1;
 	}
 
-	for (i=1;i <nArgc;i++){
-		if (  (ppArgv[i][0] == '-') || (ppArgv[i][0] == '/') )	{
+	for (i = 1; i < nArgc; i++) {
+		if ((ppArgv[i][0] == '-') || (ppArgv[i][0] == '/')) {
 			if (_tcslen(ppArgv[i]) == 2) {
-				switch (tolower(ppArgv[i][1])){
+				switch (tolower(ppArgv[i][1])) {
 				case 'l':
 					bPrintLog = 1;
 					break;
@@ -397,9 +409,9 @@ int _tmain(int nArgc, _TCHAR ** ppArgv)
 					bWaitExit = 1;
 					break;
 				case 'o':
-					if (i <nArgc -1) {
+					if (i < nArgc - 1) {
 						i++;
-						iCmdLinePos ++;
+						iCmdLinePos++;
 						pszOutputFile = ppArgv[i];
 					}
 					else {
@@ -407,12 +419,12 @@ int _tmain(int nArgc, _TCHAR ** ppArgv)
 						Usage();
 						return -1;
 					}
-					
+
 					break;
 				case 'p':
-					if (i <nArgc -1) {
+					if (i < nArgc - 1) {
 						i++;
-						iCmdLinePos ++;
+						iCmdLinePos++;
 						pszPidFile = ppArgv[i];
 					}
 					else {
@@ -423,9 +435,9 @@ int _tmain(int nArgc, _TCHAR ** ppArgv)
 
 					break;
 				case 'n':
-					if (i <nArgc -1) {
+					if (i < nArgc - 1) {
 						i++;
-						iCmdLinePos ++;
+						iCmdLinePos++;
 						pszSignalName = ppArgv[i];
 
 						if (_tcslen(pszSignalName) > 32) {
@@ -451,14 +463,14 @@ int _tmain(int nArgc, _TCHAR ** ppArgv)
 					break;
 				}
 			}
-			
-			iCmdLinePos ++;
+
+			iCmdLinePos++;
 		}
 		else {
 			break;
 		}
 	}
-	
+
 	if (bKill) {
 		TCHAR szSignalName[64];
 
@@ -511,31 +523,31 @@ int _tmain(int nArgc, _TCHAR ** ppArgv)
 	if (GetACP() == 936) {
 		setlocale(LC_ALL, "chs");
 	}
-	
+
 	pszExePath = ppArgv[iCmdLinePos];
 	if (pszExePath[1] != ':') {
-		_tcscpy(szExePath,g_szMyPath);
-		_tcscpy(&szExePath[g_iMyPathLen],pszExePath);
+		_tcscpy(szExePath, g_szMyPath);
+		_tcscpy(&szExePath[g_iMyPathLen], pszExePath);
 	}
 	else {
-		_tcscpy(szExePath,pszExePath);
+		_tcscpy(szExePath, pszExePath);
 	}
 	pszExePath = szExePath;
 
 	pch = pszExePath;
-	while(*pch) {
+	while (*pch) {
 		if (*pch == '/') {
 			*pch = '\\';
 		}
 
-		pch ++;
+		pch++;
 	}
 
-	_tcscpy(szCurrentDirectory,pszExePath);
-	pch = _tcsrchr(szCurrentDirectory,'\\');
+	_tcscpy(szCurrentDirectory, pszExePath);
+	pch = _tcsrchr(szCurrentDirectory, '\\');
 	*pch = 0;
 
-	pszCommandLine = (TCHAR *)malloc(sizeof (TCHAR) * MAX_COMMAND_LINE);
+	pszCommandLine = (TCHAR*)malloc(sizeof(TCHAR) * MAX_COMMAND_LINE);
 	if (!pszCommandLine) {
 		return -3;
 	}
@@ -545,12 +557,12 @@ int _tmain(int nArgc, _TCHAR ** ppArgv)
 	bHasSpace = _tcschr(pszExePath, ' ') != NULL;
 
 	if (bHasSpace) *pch++ = '\"';
-	_tcscpy(pch,pszExePath);
+	_tcscpy(pch, pszExePath);
 	pch += _tcslen(pszExePath);
 	if (bHasSpace) *pch++ = '\"';
-	
-	for (i = iCmdLinePos + 1; i < nArgc; i ++) {
-		_TCHAR * argv = ppArgv[i];
+
+	for (i = iCmdLinePos + 1; i < nArgc; i++) {
+		_TCHAR* argv = ppArgv[i];
 
 		*pch++ = ' ';
 
@@ -561,22 +573,22 @@ int _tmain(int nArgc, _TCHAR ** ppArgv)
 		pch += _tcslen(argv);
 		if (bHasSpace) *pch++ = '\"';
 	}
-	
+
 	*pch = 0;
-	
+
 	if (bResume) {
 		CreateChildProcessJob();
 	}
-	
+
 	bReturn = CreateChildProcess(&hChildProcess, &dwChildPid, bPrintLog, pszCommandLine, pszOutputFile, szCurrentDirectory);
 
 	if (!bReturn) {
 		DWORD dwError = GetLastError();
 
 		if (bPrintLog) {
-			SetConsoleTextAttribute(hStdOut, FOREGROUND_RED ); 
+			SetConsoleTextAttribute(hStdOut, FOREGROUND_RED);
 			_tprintf(TEXT(" Failed!"), dwError);
-			SetConsoleTextAttribute(hStdOut, DEFAULT_CONSOLE_COLOR );
+			SetConsoleTextAttribute(hStdOut, DEFAULT_CONSOLE_COLOR);
 
 			_tprintf(TEXT(",Error Code:%u\n"), dwError);
 		}
@@ -585,9 +597,9 @@ int _tmain(int nArgc, _TCHAR ** ppArgv)
 	}
 
 	if (bPrintLog) {
-		SetConsoleTextAttribute(hStdOut, FOREGROUND_GREEN ); 
+		SetConsoleTextAttribute(hStdOut, FOREGROUND_GREEN);
 		_tprintf(TEXT(" Success!\n"));
-		SetConsoleTextAttribute(hStdOut, DEFAULT_CONSOLE_COLOR); 
+		SetConsoleTextAttribute(hStdOut, DEFAULT_CONSOLE_COLOR);
 	}
 	if (bPrintLog) {
 		fflush(stdout);
@@ -596,7 +608,7 @@ int _tmain(int nArgc, _TCHAR ** ppArgv)
 	SavePidToFile(pszPidFile, dwChildPid);
 
 	if (bWaitExit || bResume) {
-		
+
 		if (pszSignalName) {
 			TCHAR szSignalName[64];
 
@@ -605,16 +617,16 @@ int _tmain(int nArgc, _TCHAR ** ppArgv)
 			hEventExit = CreateEvent(NULL, TRUE, FALSE, szSignalName);
 		}
 		// Supervise the child process, if the child process exits, restart the child process
-		while(TRUE) {
+		while (TRUE) {
 			HANDLE handles[2];
 			DWORD dwWait, nCount = 1;
-						
+
 			handles[0] = hChildProcess;
 			if (hEventExit) {
 				handles[1] = hEventExit;
 				nCount++;
 			}
-			
+
 			dwWait = WaitForMultipleObjects(nCount, handles, FALSE, INFINITE);
 
 			if (dwWait == WAIT_OBJECT_0) {
@@ -643,13 +655,22 @@ int _tmain(int nArgc, _TCHAR ** ppArgv)
 
 	free(pszCommandLine);
 
+	if (!attachedParentConsole)
+		FreeConsole();
+
 	if (hEventExit) {
 		CloseHandle(hEventExit);
 	}
 
 	DestroyChildProcessJob();
-			
-	return 0;
+
+#ifdef _DEBUG
+	_CrtMemCheckpoint(&newState); //할당 해제 후 상태
+	_CrtDumpMemoryLeaks();
+
+	if (_CrtMemDifference(&lastState, &oldState, &newState))
+		_CrtMemDumpStatistics(&lastState);
+#endif
+
+	return EXIT_SUCCESS;
 }
-
-

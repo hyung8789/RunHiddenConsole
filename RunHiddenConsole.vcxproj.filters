@@ -14,5 +14,16 @@
     <ClCompile Include="main.cpp">
       <Filter>sources</Filter>
     </ClCompile>
+    <ClCompile Include="Utils.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Utils.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="Core.h">
+      <Filter>sources</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
