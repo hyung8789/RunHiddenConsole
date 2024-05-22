@@ -195,7 +195,7 @@ BOOL CreateChildProcess(HANDLE *pChildHandle, DWORD *pid, BOOL bPrintLog, LPTSTR
 	si.dwFlags = STARTF_USESTDHANDLES;
 
 	if (bPrintLog) {
-		_tprintf(TEXT("Starting %s"),pszCommandLine);
+		_tprintf(TEXT("Starting %s"), pszCommandLine);
 	}
 
 	bReturn = CreateProcess(NULL, pszCommandLine, NULL, NULL, TRUE, CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT, pszEvnVar, pszCurrentDirectory, &si, &pi);
@@ -339,14 +339,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	_CrtMemState oldState, newState, lastState;
 	_CrtMemCheckpoint(&oldState); //할당 전 상태
 #endif
+	setlocale(LC_ALL, "korean");
+	_wsetlocale(LC_ALL, L"korean");
 
-	bool attachedParentConsole = utils::AttachToConsole();
-	if (!attachedParentConsole) //부모 콘솔에 연결 실패할 경우
-	{
-		//utils::AttachToNewConsole(); //실행 창 표시할 경우 새 콘솔 할당
-		//do nothing
-	}
-
+	bool consoleAttached = utils::AttachToConsole();
 	int nArgc;
 	LPWSTR* ppArgv = CommandLineToArgvW(GetCommandLineW(), &nArgc);
 
@@ -354,9 +350,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 		return -1;
 	}
 
-	WCHAR* pch;
-	WCHAR* pszExePath, szExePath[MAX_FILEPATH], szCurrentDirectory[MAX_FILEPATH];
-	WCHAR* pszCommandLine = NULL, * pszOutputFile = NULL, * pszPidFile = NULL, * pszSignalName = NULL;
+	TCHAR* pch;
+	TCHAR* pszExePath, szExePath[MAX_FILEPATH], szCurrentDirectory[MAX_FILEPATH];
+	TCHAR* pszCommandLine = NULL, * pszOutputFile = NULL, * pszPidFile = NULL, * pszSignalName = NULL;
 	BOOL bHasSpace;
 	BOOL bReturn;
 	BOOL bWaitExit = 0, bPrintLog = 0, bResume = 0, bFork = 0, bKill = 0;
@@ -655,14 +651,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 	free(pszCommandLine);
 
-	if (!attachedParentConsole)
-		FreeConsole();
-
 	if (hEventExit) {
 		CloseHandle(hEventExit);
 	}
 
 	DestroyChildProcessJob();
+
+	if (consoleAttached)
+		FreeConsole();
 
 #ifdef _DEBUG
 	_CrtMemCheckpoint(&newState); //할당 해제 후 상태

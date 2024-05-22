@@ -70,7 +70,7 @@ bool utils::AttachToConsole()
 		std::cerr.clear();
 		std::cin.clear();
 
-		// std::wcout, std::wclog, std::wcerr, std::wcin
+		//std::wcout, std::wclog, std::wcerr, std::wcin
 		HANDLE hConOut = CreateFile(_T("CONOUT$"), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		HANDLE hConIn = CreateFile(_T("CONIN$"), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		SetStdHandle(STD_OUTPUT_HANDLE, hConOut);
@@ -93,7 +93,7 @@ bool utils::AttachToConsole()
 bool utils::AttachToNewConsole()
 {
 	DWORD errorCode = AllocConsole(); //새 콘솔 할당
-	if (errorCode == 0)
+	if (errorCode == 0) //할당 실패 시
 		return false;
 
 	//링커-하위 시스템 창(/SUBSYSTEM:WINDOWS)로 빌드 시 콘솔 입력 및 출력이 초기화되지 않음
@@ -105,24 +105,24 @@ bool utils::AttachToNewConsole()
 	freopen_s(&fDummy, "CONOUT$", "w", stdout);
 	freopen_s(&fDummy, "CONOUT$", "w", stderr);
 	freopen_s(&fDummy, "CONIN$", "r", stdin);
-	
+
 	std::cout.clear();
 	std::clog.clear();
 	std::cerr.clear();
 	std::cin.clear();
-	
+
 	// std::wcout, std::wclog, std::wcerr, std::wcin
 	HANDLE hConOut = CreateFile(_T("CONOUT$"), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	HANDLE hConIn = CreateFile(_T("CONIN$"), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	SetStdHandle(STD_OUTPUT_HANDLE, hConOut);
 	SetStdHandle(STD_ERROR_HANDLE, hConOut);
 	SetStdHandle(STD_INPUT_HANDLE, hConIn);
-	
+
 	std::wcout.clear();
 	std::wclog.clear();
 	std::wcerr.clear();
 	std::wcin.clear();
-	
+
 	return (errorCode != 0) ? true : false;
 }
 
